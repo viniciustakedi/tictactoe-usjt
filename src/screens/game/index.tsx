@@ -1,4 +1,4 @@
-import { useAtom } from 'jotai';
+import {useAtom} from 'jotai';
 import {
   SafeAreaView,
   StatusBar,
@@ -8,18 +8,25 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-} from 'react-native'; import { Colors } from "react-native/Libraries/NewAppScreen";
-import { currentPlayerAtom, gameTableAtom, remainingMovesAtom } from '../../contexts/game';
-import { Player } from '../../contexts/types/game';
-import { NavigationProp } from '@react-navigation/native';
+} from 'react-native';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
+import {NavigationProp} from '@react-navigation/native';
 
-function Game(
-  { navigation }: { navigation: NavigationProp<any> }
+import {
+  currentPlayerAtom,
+  gameTableAtom,
+  remainingMovesAtom,
+  winnerAtom,
+} from '../../contexts/game';
+import {Player} from '../../contexts/types/game';
 
-) {
-  const [tableGame, setTableGame] = useAtom(gameTableAtom);
+import GameIcon from '../../components/game-icons';
+
+function Game({navigation}: {navigation: NavigationProp<any>}) {
   const [currentPlayer, setCurrentPlayer] = useAtom(currentPlayerAtom);
   const [remainingMoves, setRemainingMoves] = useAtom(remainingMovesAtom);
+  const [gameTable, setGameTable] = useAtom(gameTableAtom);
+  const [winner, setWinner] = useAtom(winnerAtom);
 
   const isDarkMode = useColorScheme() === 'dark';
 
@@ -28,45 +35,49 @@ function Game(
   };
 
   const play = (row: number, column: number) => {
-    tableGame[row][column] = currentPlayer;
-    setTableGame([...tableGame]);
+    gameTable[row][column] = currentPlayer;
 
-    setCurrentPlayer(state => state === Player.X ? Player.O : Player.X);
-    checkWinner(tableGame, row, column);
-  }
+    setGameTable([...gameTable]);
+    setCurrentPlayer(state => (state === Player.X ? Player.O : Player.X));
 
-  const checkWinner = (tableGame: Array<Array<string>>, row: number, column: number) => {
+    checkWinner(gameTable, row, column);
+  };
+
+  const checkWinner = (
+    gameTable: Array<Array<string>>,
+    row: number,
+    column: number,
+  ) => {
     if (
-      tableGame[row][0] !== '' &&
-      tableGame[row][0] === tableGame[row][1] &&
-      tableGame[row][1] === tableGame[row][2]
+      gameTable[row][0] !== '' &&
+      gameTable[row][0] === gameTable[row][1] &&
+      gameTable[row][1] === gameTable[row][2]
     ) {
-      return endGame(tableGame[row][0]);
+      return endGame(gameTable[row][0]);
     }
 
     if (
-      tableGame[0][column] !== '' &&
-      tableGame[0][column] === tableGame[1][column] &&
-      tableGame[1][column] === tableGame[2][column]
+      gameTable[0][column] !== '' &&
+      gameTable[0][column] === gameTable[1][column] &&
+      gameTable[1][column] === gameTable[2][column]
     ) {
-      return endGame(tableGame[0][column]);
+      return endGame(gameTable[0][column]);
     }
 
     if (
-      tableGame[0][0] !== '' &&
-      tableGame[0][0] === tableGame[1][1] &&
-      tableGame[1][1] === tableGame[2][2]
+      gameTable[0][0] !== '' &&
+      gameTable[0][0] === gameTable[1][1] &&
+      gameTable[1][1] === gameTable[2][2]
     ) {
-      return endGame(tableGame[0][0]);
+      return endGame(gameTable[0][0]);
     }
 
     if (
-      tableGame[0][2] !== '' &&
-      tableGame[0][2] &&
-      tableGame[1][1] &&
-      tableGame[1][1] === tableGame[2][0]
+      gameTable[0][2] !== '' &&
+      gameTable[0][2] === gameTable[1][1] &&
+      gameTable[1][1] === gameTable[2][0]
     ) {
-      return endGame(tableGame[0][2]);
+      return endGame(gameTable[0][2]);
     }
 
     if (remainingMoves - 1 === 0) {
@@ -74,20 +85,20 @@ function Game(
     }
 
     setRemainingMoves(state => state - 1);
-  }
+  };
 
   const endGame = (winner: string) => {
-    let modalTitle = "Jogo finalizado!";
-    let modalMessage = `Parabéns jogador ${winner}!`;
+    let message = `Parabéns jogador ${winner}!`;
+    const winnerEnum: Player | null =
+      winner === Player.X ? Player.X : winner === Player.O ? Player.O : null;
 
     if (winner === '') {
-      modalMessage = "Deu velha!";
+      message = 'Deu velha!';
     }
 
-    return Alert.alert(modalTitle, modalMessage, [
-      { text: "Voltar ao menu", onPress: () => navigation.navigate("Home") },
-    ]);
-  }
+    setWinner({winner: winnerEnum, message});
+    navigation.navigate('Winner');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -96,32 +107,29 @@ function Game(
         backgroundColor={backgroundStyle.backgroundColor}
       />
       <Text style={styles.title}>Jogo da Velha</Text>
-
-      {
-        tableGame.map((row, rowNumber) => {
-          return (
-            <View key={rowNumber} style={styles.inLineItems}>
-              {
-                row.map((column, columnNumber) => {
-                  return (
-                    <TouchableOpacity
-                      key={columnNumber}
-                      style={styles.boxJogador}
-                      onPress={() => play(rowNumber, columnNumber)}
-                      disabled={column !== ''}>
-                      <Text
-                        style={column === Player.X ? styles.jogadorX : styles.jogadorO}
-                      >
-                        {column}
-                      </Text>
-                    </TouchableOpacity>
-                  )
-                })
-              }
-            </View>
-          )
-        })
-      }
+      {gameTable.map((row, rowNumber) => {
+        return (
+          <View key={rowNumber} style={styles.inLineItems}>
+            {row.map((column, columnNumber) => {
+              return (
+                <TouchableOpacity
+                  key={columnNumber}
+                  style={styles.boxJogador}
+                  onPress={() => play(rowNumber, columnNumber)}
+                  disabled={column !== ''}>
+                  {column === Player.X ? (
+                    <GameIcon symbol={Player.X} width={90} height={90} />
+                  ) : column === Player.O ? (
+                    <GameIcon symbol={Player.O} width={90} height={90} />
+                  ) : (
+                    <Text>{''}</Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        );
+      })}
     </SafeAreaView>
   );
 }
@@ -129,11 +137,14 @@ function Game(
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
+    fontSize: 20,
+    color: '#555',
+    marginBottom: 20,
   },
   subtitulo: {
     fontSize: 20,
@@ -145,16 +156,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 80,
     height: 80,
+    borderRadius: 50,
     backgroundColor: '#f3f3f3',
     margin: 5,
-  },
-  jogadorX: {
-    fontSize: 40,
-    color: '#553FDA',
-  },
-  jogadorO: {
-    fontSize: 40,
-    color: '#DA3F3F',
   },
   inLineItems: {
     flexDirection: 'row',
@@ -169,7 +173,7 @@ const styles = StyleSheet.create({
     fontSize: 25,
     fontWeight: 'bold',
     color: '#333',
-  }
+  },
 });
 
 export default Game;

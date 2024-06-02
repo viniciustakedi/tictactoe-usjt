@@ -1,15 +1,14 @@
 export type PlayerNameAndSymbol = {
-  name: string,
-  symbol: Player
-}
+  name: string;
+  symbol: Player;
+};
 
 export enum Player {
-  X = "X",
-  O = "O"
+  X = 'X',
+  O = 'O',
 }
 
-export const gameTableInitialValue = [
-  ["", "", ""],
-  ["", "", ""],
-  ["", "", ""]
-]
+export type GameContextType = {
+  winner: Player | null;
+  message: string;
+}
